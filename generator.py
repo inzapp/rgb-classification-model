@@ -6,27 +6,17 @@ from cv2 import cv2
 
 
 class RGBClassificationModelDataGenerator:
-    def __init__(self, input_shape, batch_size):
-        self.generator_flow = GeneratorFlow(input_shape, batch_size)
+    def __init__(self, batch_size, colors):
+        self.generator_flow = GeneratorFlow(batch_size, colors)
 
     def flow(self):
         return self.generator_flow
 
 
 class GeneratorFlow(tf.keras.utils.Sequence):
-    def __init__(self, input_shape, batch_size):
-        self.input_shape = input_shape
+    def __init__(self, batch_size, colors):
         self.batch_size = batch_size
-        self.colors = [
-            {'name': 'black', 'bgr': [0, 0, 0]},
-            {'name': 'gray', 'bgr': [127, 127, 127]},
-            {'name': 'white', 'bgr': [255, 255, 255]},
-            {'name': 'red', 'bgr': [0, 0, 255]},
-            {'name': 'orange', 'bgr': [0, 128, 255]},
-            {'name': 'yellow', 'bgr': [0, 255, 255]},
-            {'name': 'green', 'bgr': [0, 255, 0]},
-            {'name': 'blue', 'bgr': [255, 0, 0]},
-        ]
+        self.colors = colors
 
     def augment(self, color):
         color_name = color['name']
@@ -66,7 +56,7 @@ class GeneratorFlow(tf.keras.utils.Sequence):
             y[index] = 1.0
             batch_x.append(x)
             batch_y.append(y)
-        batch_x = np.asarray(batch_x).reshape((self.batch_size,) + self.input_shape).astype('float32')
+        batch_x = np.asarray(batch_x).reshape((self.batch_size, 3)).astype('float32')
         batch_y = np.asarray(batch_y).reshape((self.batch_size, len(self.colors))).astype('float32')
         return batch_x, batch_y
 
