@@ -20,7 +20,6 @@ class RGBClassificationModel:
             momentum,
             batch_size,
             iterations,
-            training_view=False,
             pretrained_model_path=''):
         self.lr = lr
         self.momentum = momentum
@@ -32,17 +31,23 @@ class RGBClassificationModel:
             {'achromatic': True, 'name': 'white', 'bgr': [245, 245, 245]},
             {'achromatic': False, 'name': 'red', 'bgr': [10, 10, 245]},
             {'achromatic': False, 'name': 'dark_red', 'bgr': [10, 10, 128]},
-            {'achromatic': False, 'name': 'orange', 'bgr': [10, 128, 245]},
+            {'achromatic': False, 'name': 'pastel_pink', 'bgr': [180, 180, 255]},
+            # {'achromatic': False, 'name': 'orange', 'bgr': [10, 128, 245]},
+            {'achromatic': False, 'name': 'brown', 'bgr': [10, 100, 180]},
+            {'achromatic': False, 'name': 'pastel_peach', 'bgr': [165, 210, 255]},
             {'achromatic': False, 'name': 'yellow', 'bgr': [10, 245, 245]},
-            {'achromatic': False, 'name': 'dark_yellow', 'bgr': [10, 128, 128]},
+            {'achromatic': False, 'name': 'light_yellow', 'bgr': [128, 250, 250]},
+            {'achromatic': False, 'name': 'military', 'bgr': [10, 128, 128]},
             {'achromatic': False, 'name': 'green', 'bgr': [10, 245, 10]},
             {'achromatic': False, 'name': 'dark_green', 'bgr': [10, 128, 10]},
+            {'achromatic': False, 'name': 'pastel_green', 'bgr': [180, 255, 180]},
             {'achromatic': False, 'name': 'blue', 'bgr': [245, 10, 10]},
             {'achromatic': False, 'name': 'dark_blue', 'bgr': [128, 10, 10]},
+            {'achromatic': False, 'name': 'pastel_blue', 'bgr': [255, 180, 180]},
             {'achromatic': False, 'name': 'aqua', 'bgr': [245, 245, 10]},
+            {'achromatic': False, 'name': 'blue_green', 'bgr': [180, 180, 0]},
             {'achromatic': False, 'name': 'pink', 'bgr': [245, 10, 245]},
-            {'achromatic': False, 'name': 'purple', 'bgr': [128, 10, 245]},
-            {'achromatic': False, 'name': 'brown', 'bgr': [10, 64, 128]},
+            {'achromatic': False, 'name': 'violet', 'bgr': [245, 10, 128]},
         ]
 
         if pretrained_model_path == '':
@@ -56,9 +61,10 @@ class RGBClassificationModel:
 
     def get_model(self, num_classes):
         input_layer = tf.keras.layers.Input(shape=(3,))
-        x = tf.keras.layers.Dense(units=32, kernel_initializer='he_normal', activation='relu')(input_layer)
-        x = tf.keras.layers.Dense(units=32, kernel_initializer='he_normal', activation='relu')(x)
-        x = tf.keras.layers.Dense(units=32, kernel_initializer='he_normal', activation='relu')(x)
+        x = tf.keras.layers.Dense(units=128, kernel_initializer='he_normal', activation='relu')(input_layer)
+        x = tf.keras.layers.Dropout(0.25)(x)
+        x = tf.keras.layers.Dense(units=128, kernel_initializer='he_normal', activation='relu')(x)
+        x = tf.keras.layers.Dropout(0.25)(x)
         x = tf.keras.layers.Dense(units=num_classes, kernel_initializer='glorot_normal', activation='sigmoid', name='output')(x)
         return tf.keras.models.Model(input_layer, x)
 
@@ -90,7 +96,12 @@ class RGBClassificationModel:
             y = self.model.predict_on_batch(x=x).reshape((len(self.colors),))
             index = np.argmax(y)
             print(self.colors[index]['name'])
-            cv2.imshow('img', img)
+
+            bgr = color_img = self.colors[index]['bgr']
+            color_img = np.asarray(bgr).reshape((1, 1, 3)).astype('uint8')
+            color_img = cv2.resize(color_img, (128, 128), interpolation=cv2.INTER_NEAREST)
+            res = np.concatenate((img, color_img), axis=1)
+            cv2.imshow('img', res)
             key = cv2.waitKey(0)
             if key == 27:
                 exit(0)
