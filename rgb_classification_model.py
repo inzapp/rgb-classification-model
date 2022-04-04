@@ -80,8 +80,16 @@ class RGBClassificationModel:
                 break
 
     def predict(self):
-        r = np.random.uniform(size=3)
-        x = x.reshape((1, 3)).astype('float32')
-        y = self.model.predict_on_batch(x=x).reshape((len(self.colors),))
-        index = np.argmax(y)
-        print(self.colors[index]['name'])
+        while True:
+            r = np.random.uniform(size=3)
+            img = r.reshape((1, 1, 3)) * 255.0
+            img = np.clip(img, 0.0, 255.0).astype('uint8')
+            img = cv2.resize(img, (128, 128), interpolation=cv2.INTER_NEAREST)
+            x = r.reshape((1, 3)).astype('float32')
+            y = self.model.predict_on_batch(x=x).reshape((len(self.colors),))
+            index = np.argmax(y)
+            print(self.colors[index]['name'])
+            cv2.imshow('img', img)
+            key = cv2.waitKey(0)
+            if key == 27:
+                exit(0)
