@@ -18,34 +18,42 @@ class GeneratorFlow(tf.keras.utils.Sequence):
         self.input_shape = input_shape
         self.batch_size = batch_size
         self.colors = [
-            [0, 0, 0],  # black
-            [127, 127, 127],  # gray
-            [255, 255, 255],  # white
-            [0, 0, 255],  # red
-            [0, 128, 255],  # orange
-            [0, 255, 255],  # yellow
-            [0, 255, 0],  # green
-            [255, 0, 0],  # blue
+            {'name': 'black', 'bgr': [0, 0, 0]},
+            {'name': 'gray', 'bgr': [127, 127, 127]},
+            {'name': 'white', 'bgr': [255, 255, 255]},
+            {'name': 'red', 'bgr': [0, 0, 255]},
+            {'name': 'orange', 'bgr': [0, 128, 255]},
+            {'name': 'yellow', 'bgr': [0, 255, 255]},
+            {'name': 'green', 'bgr': [0, 255, 0]},
+            {'name': 'blue', 'bgr': [255, 0, 0]},
         ]
+
+    def augment(self, color):
+        color_name = color['name']
+        bgr = np.asarray(color['bgr']).reshape((1, 1, 3)).astype('uint8')
+        h, s, v = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV).reshape((3,)).astype('float32')
+        if color_name == 'black' or color_name == 'gray' or color_name == 'white':
+            pass  # do not augment hue and saturation value
+        else:
+            h += np.random.randint(-5, 6)
+            s += np.random.randint(-100, 0)
+        v += np.random.randint(-30, 31)
+        h = np.clip(h, 0, 255)
+        s = np.clip(s, 0, 255)
+        v = np.clip(v, 0, 255)
+        hsv = np.asarray([h, s, v]).reshape((1, 1, 3)).astype('uint8')
+        return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR).reshape((3,))
 
     def __getitem__(self, index):
         batch_x = []
         batch_y = []
-        debug = True
+        debug = False
         for _ in range(self.batch_size):
-            bgr = self.colors[np.random.randint(len(self.colors))]
-            index = self.colors.index(bgr)
-            bgr = np.asarray(bgr).reshape((1, 1, 3)).astype('uint8')
-            h, s, v = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV).reshape((3,)).astype('float32')
-            h += np.random.randint(-5, 6)
-            s += np.random.randint(-50, 51)
-            v += np.random.randint(-10, 11)
-            h = np.clip(h, 0, 255)
-            s = np.clip(s, 0, 255)
-            v = np.clip(v, 0, 255)
-            hsv = np.asarray([h, s, v]).reshape((1, 1, 3)).astype('uint8')
-            augmentated_bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR).reshape((3,))
+            color = self.colors[np.random.randint(len(self.colors))]
+            index = self.colors.index(color)
+            augmentated_bgr = self.augment(color)
             if debug:
+                bgr = np.asarray(color['bgr']).astype('uint8')
                 bgr_img = cv2.resize(bgr.reshape(1, 1, 3), (128, 128), interpolation=cv2.INTER_NEAREST)
                 a_bgr_img = cv2.resize(augmentated_bgr.reshape(1, 1, 3), (128, 128), interpolation=cv2.INTER_NEAREST)
                 res = np.concatenate((bgr_img, a_bgr_img), axis=1)
@@ -63,4 +71,4 @@ class GeneratorFlow(tf.keras.utils.Sequence):
         return batch_x, batch_y
 
     def __len__(self):
-        return int(np.floor(1024 / self.batch_size))
+        return 4096
